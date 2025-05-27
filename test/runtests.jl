@@ -4,7 +4,7 @@ using DeprecateKeywords
 @testset "Basic" begin
     @depkws function f(; a=2, @deprecate b a)
         a
-    end
+    end true # force the deprecation warning to be emitted
 
     @test f(a=1) === 1
     VERSION >= v"1.8" && @test_warn "Keyword argument `b` is deprecated. Use `a` instead." (@test f(b=1) == 1)
@@ -15,7 +15,7 @@ end
 @testset "Multi-param" begin
     @depkws function g(; α=2, γ=4, @deprecate(β, α), @deprecate(δ, γ))
         α + γ
-    end
+    end false # do not force the deprecation warning to be emitted (default behavior)
 
     @test g() === 6
     @test g(α=1, γ=3) === 4
@@ -27,6 +27,7 @@ end
 end
 
 @testset "With types" begin
+    # default behavior is to not emit deprecation warnings, so it will not be emitted
     @depkws h(; (@deprecate old_kw new_kw), new_kw::Int=3) = new_kw
     @test h() === 3
     @test h(new_kw=1) === 1

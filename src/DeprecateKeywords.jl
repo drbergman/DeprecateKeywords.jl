@@ -5,7 +5,7 @@ export @depkws
 using MacroTools
 
 """
-    @depkws def
+    @depkws def [force::Bool=false]
 
 Macro to deprecate keyword arguments. Use by wrapping a function signature,
 while using `@deprecate(old_kw, new_kw)` within the function signature to deprecate.
@@ -16,15 +16,20 @@ while using `@deprecate(old_kw, new_kw)` within the function signature to deprec
 @depkws function f(; a=2, @deprecate(b, a))
     a
 end
+
+```julia
+@depkws function f(; a=2, @deprecate(b, a))
+    a
+end true # force the deprecation warning to be emitted
 ```
 """
-macro depkws(def)
-    return esc(_depkws(def))
+macro depkws(def, force::Bool=false)
+    return esc(_depkws(def, force))
 end
 
 abstract type DeprecatedDefault end
 
-function _depkws(def)
+function _depkws(def, force)
     sdef = splitdef(def)
     func_symbol = Expr(:quote, sdef[:name])  # Double quote for expansion
 
@@ -92,7 +97,7 @@ function _depkws(def)
         depwarn_string = "Keyword argument `$(deprecated_symbol)` is deprecated. Use `$(_get_symbol(new_kw))` instead."
         new_kwcall = quote
             if $deprecated_symbol !== $(DeprecatedDefault)
-                Base.depwarn($depwarn_string, $func_symbol)
+                Base.depwarn($depwarn_string, $func_symbol; force=$force)
                 $deprecated_symbol
             else
                 $default

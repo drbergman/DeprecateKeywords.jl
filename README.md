@@ -38,21 +38,30 @@ julia> foo(old_kw1=1, new_kw2=2)
 3
 ```
 
-(The warning uses `depwarn`, so is only visible if one starts with `--depwarn=yes`)
+`@depkws` accepts an optional argument to force the deprecation warning to emit regardless of the `--depwarn` setting.
+If omitted, the default is `false`, which means the deprecation warning will only be shown if the user has `--depwarn=yes` set.
+
+```julia
+julia> @depkws function foo(; new_kw1=2, new_kw2=3,
+                       @deprecate(old_kw1, new_kw1),
+                       @deprecate(old_kw2, new_kw2))
+    return new_kw1 + new_kw2
+end true
+```
 
 Here's what this actually gets expanded to:
 
 ```julia
 function foo(; old_kw2 = DeprecatedDefault, old_kw1 = DeprecatedDefault, new_kw1 = begin
                   if old_kw1 !== DeprecatedDefault
-                      Base.depwarn("Keyword argument `old_kw1` is deprecated. Use `new_kw1` instead.", :foo)
+                      Base.depwarn("Keyword argument `old_kw1` is deprecated. Use `new_kw1` instead.", :foo; force=true)
                       old_kw1
                   else
                       2
                   end
               end, new_kw2 = begin
                   if old_kw2 !== DeprecatedDefault
-                      Base.depwarn("Keyword argument `old_kw2` is deprecated. Use `new_kw2` instead.", :foo)
+                      Base.depwarn("Keyword argument `old_kw2` is deprecated. Use `new_kw2` instead.", :foo; force=true)
                       old_kw2
                   else
                       3

@@ -5,7 +5,7 @@ export @depkws
 using MacroTools
 
 """
-    @depkws def [force=false]
+    @depkws [force=false] def
 
 Macro to deprecate keyword arguments. Use by wrapping a function signature,
 while using `@deprecate(old_kw, new_kw)` within the function signature to deprecate.
@@ -18,13 +18,18 @@ while using `@deprecate(old_kw, new_kw)` within the function signature to deprec
 end
 
 ```julia
-@depkws function f(; a=2, @deprecate(b, a))
+# force the deprecation warning to be emitted
+@depkws force=true function f(; a=2, @deprecate(b, a))
     a
-end force=true # force the deprecation warning to be emitted
+end
 ```
 """
-macro depkws(def, force_stmt=false)
+macro depkws(force_stmt, def)
     return esc(_depkws(def, eval(force_stmt)::Bool))
+end
+
+macro depkws(def)
+    return esc(_depkws(def, false))
 end
 
 abstract type DeprecatedDefault end

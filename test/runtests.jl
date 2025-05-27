@@ -2,9 +2,10 @@ using Test
 using DeprecateKeywords
 
 @testset "Basic" begin
-    @depkws function f(; a=2, @deprecate b a)
+    # force the deprecation warning to be emitted
+    @depkws force=true function f(; a=2, @deprecate b a)
         a
-    end force=true # force the deprecation warning to be emitted
+    end
 
     @test f(a=1) === 1
     VERSION >= v"1.8" && @test_warn "Keyword argument `b` is deprecated. Use `a` instead." (@test f(b=1) == 1)
@@ -13,9 +14,10 @@ using DeprecateKeywords
 end
 
 @testset "Multi-param" begin
-    @depkws function g(; α=2, γ=4, @deprecate(β, α), @deprecate(δ, γ))
+    # do not force the deprecation warning to be emitted (default behavior)
+    @depkws force=false function g(; α=2, γ=4, @deprecate(β, α), @deprecate(δ, γ))
         α + γ
-    end force=false # do not force the deprecation warning to be emitted (default behavior)
+    end
 
     @test g() === 6
     @test g(α=1, γ=3) === 4

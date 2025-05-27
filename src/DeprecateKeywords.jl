@@ -25,7 +25,12 @@ end
 ```
 """
 macro depkws(force_stmt, def)
-    return esc(_depkws(def, eval(force_stmt)::Bool))
+    key, val = string(force_stmt) |> x->split(x, "=")
+    key, val = rstrip(key), lstrip(val)
+    @assert key == "force" &&
+            val ∈ ["true", "false"] "First argument to @depkws must be `force=true` or `force=false`."
+    force = val == "true"
+    return esc(_depkws(def, force))
 end
 
 macro depkws(def)

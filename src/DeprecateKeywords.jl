@@ -5,7 +5,7 @@ export @depkws
 using MacroTools
 
 """
-    @depkws [force=false] def
+    @depkws [force_depwarn=false] def
 
 Macro to deprecate keyword arguments. Use by wrapping a function signature,
 while using `@deprecate(old_kw, new_kw)` within the function signature to deprecate.
@@ -16,21 +16,24 @@ while using `@deprecate(old_kw, new_kw)` within the function signature to deprec
 @depkws function f(; a=2, @deprecate(b, a))
     a
 end
+```
 
 ```julia
 # force the deprecation warning to be emitted
-@depkws force=true function f(; a=2, @deprecate(b, a))
+@depkws force_depwarn=true function f(; a=2, @deprecate(b, a))
     a
 end
 ```
 """
 macro depkws(force_stmt, def)
-    key, val = string(force_stmt) |> x->split(x, "=")
-    key, val = rstrip(key), lstrip(val)
-    @assert key == "force" &&
-            val ∈ ["true", "false"] "First argument to @depkws must be `force=true` or `force=false`."
-    force = val == "true"
-    return esc(_depkws(def, force))
+    tokens = string(force_stmt) |> x->split(x, "=")
+    error_msg = "If two arguments are passed to @depkws, the first must be `force_depwarn=true` or `force_depwarn=false`. Got `$(force_stmt)`."
+    @assert length(tokens) == 2 error_msg
+    key, val = rstrip(tokens[1]), lstrip(tokens[2])
+    @assert key == "force_depwarn" &&
+            val ∈ ["true", "false"] error_msg
+    force_depwarn = val == "true"
+    return esc(_depkws(def, force_depwarn))
 end
 
 macro depkws(def)
@@ -39,7 +42,7 @@ end
 
 abstract type DeprecatedDefault end
 
-function _depkws(def, force)
+function _depkws(def, force_depwarn)
     sdef = splitdef(def)
     func_symbol = Expr(:quote, sdef[:name])  # Double quote for expansion
 
@@ -107,7 +110,7 @@ function _depkws(def, force)
         depwarn_string = "Keyword argument `$(deprecated_symbol)` is deprecated. Use `$(_get_symbol(new_kw))` instead."
         new_kwcall = quote
             if $deprecated_symbol !== $(DeprecatedDefault)
-                Base.depwarn($depwarn_string, $func_symbol; force=$force)
+                Base.depwarn($depwarn_string, $func_symbol; force=$force_depwarn)
                 $deprecated_symbol
             else
                 $default

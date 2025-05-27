@@ -3,7 +3,7 @@ using DeprecateKeywords
 
 @testset "Basic" begin
     # force the deprecation warning to be emitted
-    @depkws force=true function f(; a=2, @deprecate b a)
+    @depkws force_depwarn=true function f(; a=2, @deprecate b a)
         a
     end
 
@@ -15,7 +15,7 @@ end
 
 @testset "Multi-param" begin
     # do not force the deprecation warning to be emitted (default behavior)
-    @depkws force=false function g(; α=2, γ=4, @deprecate(β, α), @deprecate(δ, γ))
+    @depkws force_depwarn=false function g(; α=2, γ=4, @deprecate(β, α), @deprecate(δ, γ))
         α + γ
     end
 

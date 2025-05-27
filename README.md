@@ -39,10 +39,10 @@ julia> foo(old_kw1=1, new_kw2=2)
 ```
 
 `@depkws` accepts an optional argument to force the deprecation warning to emit regardless of the `--depwarn` setting.
-If omitted, the default is `force_depwarn=false`, which means the deprecation warning will only be shown if the user has `--depwarn=yes` set.
+If omitted, the default is `force=false`, which means the deprecation warning will only be shown if the user has `--depwarn=yes` set.
 
 ```julia
-julia> @depkws force_depwarn=true function foo(; new_kw1=2, new_kw2=3,
+julia> @depkws force=true function foo(; new_kw1=2, new_kw2=3,
                        @deprecate(old_kw1, new_kw1),
                        @deprecate(old_kw2, new_kw2))
     return new_kw1 + new_kw2

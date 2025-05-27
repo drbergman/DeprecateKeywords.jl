@@ -3,7 +3,7 @@ using DeprecateKeywords
 
 @testset "Basic" begin
     # force the deprecation warning to be emitted
-    @depkws force_depwarn=true function f(; a=2, @deprecate b a)
+    @depkws force=true function f(; a=2, @deprecate b a)
         a
     end
 
@@ -15,7 +15,7 @@ end
 
 @testset "Multi-param" begin
     # do not force the deprecation warning to be emitted (default behavior)
-    @depkws force_depwarn=false function g(; α=2, γ=4, @deprecate(β, α), @deprecate(δ, γ))
+    @depkws force=false function g(; α=2, γ=4, @deprecate(β, α), @deprecate(δ, γ))
         α + γ
     end
 
@@ -60,4 +60,11 @@ end
     VERSION >= v"1.8" && @test_throws UndefKeywordError k(1.0)
     VERSION >= v"1.8" && @test_warn "Keyword argument" (@test k(1.0; a=2.0) == 3.0)
     @test k(1.0; b=2.0) == 3.0
+end
+
+@testset "Name conflicts" begin
+    @depkws force(; a="cat", @deprecate(b, a)) = a
+    VERSION >= v"1.8" && @test_warn "Keyword argument" (@test force(b="dog") == "dog")
+    @test macroexpand(DeprecateKeywords, :(@depkws force(; a="cat", @deprecate(b, a)) = a)) |> string |> contains("force = false")
+    @test macroexpand(DeprecateKeywords, :(@depkws force=true force(; a="cat", @deprecate(b, a)) = a)) |> string |> contains("force = true")
 end

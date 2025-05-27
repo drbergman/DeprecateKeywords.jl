@@ -25,24 +25,31 @@ end
 end
 ```
 """
-macro depkws(force_stmt, def)
-    tokens = string(force_stmt) |> x->split(x, "=")
-    error_msg = "If two arguments are passed to @depkws, the first must be `force_depwarn=true` or `force_depwarn=false`. Got `$(force_stmt)`."
-    @assert length(tokens) == 2 error_msg
-    key, val = rstrip(tokens[1]), lstrip(tokens[2])
-    @assert key == "force_depwarn" &&
-            val ∈ ["true", "false"] error_msg
-    force_depwarn = val == "true"
-    return esc(_depkws(def, force_depwarn))
+macro depkws(args...)
+    options = parse_options(args[1:end-1])
+    return esc(_depkws(args[end], options))
 end
 
-macro depkws(def)
-    return esc(_depkws(def, false))
+function parse_options(args)
+    options = default_options()
+    for arg in args
+        if isa(arg, Expr) && arg.head == :(=)
+            @assert arg.args[1] ∈ keys(options) "Unknown option: $(arg.args[1])"
+            options[arg.args[1]] = arg.args[2]
+        else
+            error("Invalid option: $arg")
+        end
+    end
+    return options
+end
+
+function default_options()
+    return Dict{Symbol, Any}(:force_depwarn => false)
 end
 
 abstract type DeprecatedDefault end
 
-function _depkws(def, force_depwarn)
+function _depkws(def, options)
     sdef = splitdef(def)
     func_symbol = Expr(:quote, sdef[:name])  # Double quote for expansion
 
@@ -110,7 +117,7 @@ function _depkws(def, force_depwarn)
         depwarn_string = "Keyword argument `$(deprecated_symbol)` is deprecated. Use `$(_get_symbol(new_kw))` instead."
         new_kwcall = quote
             if $deprecated_symbol !== $(DeprecatedDefault)
-                Base.depwarn($depwarn_string, $func_symbol; force=$force_depwarn)
+                Base.depwarn($depwarn_string, $func_symbol; force=$(options[:force_depwarn]))
                 $deprecated_symbol
             else
                 $default
